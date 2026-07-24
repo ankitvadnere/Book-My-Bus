@@ -1,0 +1,250 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Book My Bus</title>
+  <link rel="icon" href="../public/images/Logo.png">
+  <link rel="stylesheet" href="index.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="acc-sec">
+    <div class="head">
+      <i class="fa-solid fa-circle-user"></i>
+      <h1 id="user-name"></h1>
+      <i class="fa-solid fa-xmark" id="cancel-btn"></i>
+    </div>
+    <div class="body" id="user-details"></div>
+    <div class="logout-sec">
+      <button id="logout">Log-out</button>
+    </div>
+  </div>
+
+  <div class="curr-bookings invisible" id="curr-bookings">
+    <div class="bookings-head">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <h1>Your Bookings</h1>
+      <i class="fa-solid fa-xmark" id="cancel-btn-books"></i>
+    </div>
+    <div class="bookings-body"></div>
+  </div>
+
+  <div class="main-body" id="home">
+    <div class="nav-bar">
+      <div class="logo">
+          <img src="./images/New_Logo.png">
+      </div>
+      <div class="btn-panel">
+          <div class="btns">
+              <i class="fa-solid fa-house"></i>
+              <a href="#home">Home</a>
+          </div>
+          <div class="btns" id="my-books">
+              <i class="fa-solid fa-bars"></i>
+              <p>My Bookings</p>
+          </div>
+          <div class="btns" id="acc-btn">
+              <i class="fa-solid fa-circle-user"></i>
+              <p id="acc-name"></p>
+          </div>
+      </div>
+    </div>
+    
+    <div class="banner"></div>
+    <div class="booking-panel">
+        <div class="input-box">
+            <input class="inputs start" type="text" placeholder="From" id="from">
+            <input class="inputs" type="text" placeholder="To" id="to">
+            <input class="inputs end" type="date" id="date">
+        </div>
+        <div class="btn-box">
+            <button id="search-bus-btn">Search Buses<i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
+    </div>
+
+    <div class="avl-buses"></div>
+
+    <div class="hero-bar">
+        <div class="hero-bar-text">
+            <h2>50+ people booked buses from Pune</h2>
+            <h4>On book my bus last month</h4>
+        </div>
+        <div class="tourist-img">
+            <img src="./images/Tourist.png">  
+        </div>
+    </div>
+  </div>
+<script>
+  async function checkLogin() {
+    const res = await fetch('/api/auth/me');
+    const user = await res.json();
+    console.log(user);
+    if (!user) {
+      alert('Please login first');
+      window.location.href = 'login.html';
+    }
+    let accName = document.querySelector('#acc-name');
+    accName.innerText = user.name;
+
+    let userName = document.querySelector('#user-name');
+    let userDetails = document.querySelector('#user-details');
+
+    userName.innerText = user.name;
+
+    userDetails.innerHTML = `
+      <p><b>User Id: </b>${user._id}</p>
+      <p><b>Email: </b>${user.email}</p>
+      <p><b>Role: </b>${user.role}</p>
+    `
+  }
+  checkLogin();
+
+  const dateInput = document.getElementById('date');
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.min = today;
+
+  let accSec = document.querySelector('.acc-sec');
+  let accBtn = document.querySelector('#acc-btn');
+  let cancelBtn = document.querySelector('#cancel-btn');
+  let mainBody = document.querySelector('.main-body');
+
+  accBtn.addEventListener('click', () => {
+    accSec.classList.add('visible');
+    mainBody.classList.add('blur');
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    accSec.classList.remove('visible');
+    mainBody.classList.remove('blur');
+  })
+
+  async function checkPastBooks() {
+    const currBookings = document.querySelector('.bookings-body');
+    const curr = await fetch('/api/bookings/user/mybookings');
+    const currBooks = await curr.json();
+    console.log(currBooks);
+
+    if (!currBooks.length) {
+      currBookings.innerHTML = '<p>No Booking history</p>';
+      return;
+    }
+
+    currBookings.innerHTML = ''; // clear previous content
+
+    currBooks.forEach(cb => {
+      currBookings.innerHTML += `
+        <div class="ticket">
+          <div class="ids">
+            <p><b>Transaction Id: </b>${cb._id}</p>
+            <p><b>Bus Id: </b>${cb.busId._id}</p>
+          </div>
+          <div class="bus-details">
+            <p id="booked-bus-name"><b>Bus Name: </b>${cb.busId.busName}</p>
+            <p><b>Dept Date: </b>${cb.dateOfTravel}</p>
+            <p><b>From: </b>${cb.busId.from}</p>
+            <p><b>To: </b>${cb.busId.to}</p>
+            <p><b>Dept Time: </b>${cb.busId.departureTime}</p>
+          </div>
+          <div class="book-details">
+            <p><b>Seats: </b>${cb.seats.join(', ')}</p>
+            <p><b>Total Price: </b>₹${cb.totalPrice}</p>
+            <button class="cancel-tkt" data-id="${cb._id}">Cancel</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  checkPastBooks();
+
+  let bookSec = document.querySelector('.curr-bookings');
+  let bookBtn = document.querySelector('#my-books');
+  let cancelBtnBooks = document.querySelector('#cancel-btn-books');
+
+  bookBtn.addEventListener('click', () => {
+    bookSec.classList.add('visible');
+    bookSec.classList.remove('invisible');
+    mainBody.classList.add('blur');
+  });
+
+  cancelBtnBooks.addEventListener('click', () => {
+    bookSec.classList.add('invisible');
+    bookSec.classList.remove('visible');
+    mainBody.classList.remove('blur');
+  });
+
+  // Handle cancel button click
+  document.addEventListener('click', async e => {
+    if (e.target.classList.contains('cancel-tkt')) {
+      const id = e.target.dataset.id;
+      if (!id) return alert('Booking ID missing!');
+      if (!confirm('Are you sure you want to cancel this booking?')) return;
+
+      const res = await fetch('/api/bookings/cancel/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'Cancel failed');
+      alert('Booking cancelled successfully');
+      checkPastBooks(); // reload list after cancel
+    }
+  });
+
+  document.getElementById('search-bus-btn').addEventListener('click', async () => {
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+    const date = document.getElementById('date').value;
+    const today = new Date().toISOString().split('T')[0];
+  
+    if (date < today) {
+      alert('Please select a valid date (not in the past).');
+      return;
+    }
+    const res = await fetch('/api/buses/search', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ from, to, date})
+    });
+    const buses = await res.json();
+    const div = document.querySelector('.avl-buses');
+    if (!buses.length) return div.innerHTML = '<h1>No buses found</h1>';
+    let html = '';
+    buses.forEach(b => {
+      console.log(b.weekday);
+      html += 
+      `
+      <div class="bus"> 
+        <h3 class="bus-name">${b.busName}</h3>
+          <div class="details">
+            <p class="bus-from"><b>From: </b>${b.from}</p>
+            <p class="bus-from"><b>To: </b>${b.to}</p>
+            <p><b>Date: </b>${date}</p>
+            <p><b>Time: </b>${b.departureTime}</p>
+            <p><b>Price: </b>₹${b.price}</p>
+          </div>
+        <button class="bus-book-btn"><a href="/bus.html?id=${b._id}&date=${date}">View Seats</a></button>
+      </div>
+      `;
+    });
+    div.innerHTML = html;
+  });
+
+  let logOut = document.getElementById('logout');
+  logOut.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/auth/logout');
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Logout failed!');
+      } else {
+        alert('Logged Out Successfully!');
+        window.location.href = 'login.html';
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Logout Failed!');
+    }
+  });
+</script>
+</body>
+</html>

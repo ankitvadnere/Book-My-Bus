@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+</head>
+<head>
+  <meta charset="utf-8">
+  <title>Book My Bus</title>
+  <link rel="icon" href="../public/images/Logo.png">
+  <link rel="stylesheet" href="provider.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="acc-sec">
+    <div class="head">
+      <i class="fa-solid fa-circle-user"></i>
+      <h1 id="user-name"></h1>
+      <i class="fa-solid fa-xmark" id="cancel-btn"></i>
+    </div>
+    <div class="body" id="user-details"></div>
+    <div class="logout-sec">
+      <button id="logout">Log-out</button>
+    </div>
+  </div>
+
+  <div class="main-body">
+    <div class="nav-bar">
+      <div class="logo">
+          <img src="./images/New_Logo.png">
+      </div>
+      <div class="btn-panel">
+          <div class="btns" id="acc-btn">
+              <i class="fa-solid fa-circle-user"></i>
+              <p id="acc-name"></p>
+          </div>
+      </div>
+    </div>
+    <hr>
+    <form id="addBus">
+      <h2>Add Bus</h2>
+      <label class="bus-detail-labels" for="busName">Bus name: </label> 
+      <input class="bus-detail-input" id="busName" required><br>
+      <label class="bus-detail-labels" for="from">From: </label>
+      <input class="bus-detail-input" id="from" required><br>
+      <label class="bus-detail-labels" for="to">To: </label>
+      <input class="bus-detail-input" id="to" required><br>
+      <label class="bus-detail-labels" for="departureTime">Departure Time: </label>
+      <input class="bus-detail-input" id="departureTime" required><br>
+      <label class="bus-detail-labels" for="price">Price: </label>
+      <input class="bus-detail-input" id="price" required type="number"><br>
+      <label class="bus-detail-labels" for="totalSeats">Total Seats: </label>
+      <input class="bus-detail-input" id="totalSeats" required type="number" min="1" max="30"><br>
+      <div class="day-select">
+        <p>Operating Days:</p>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Monday"> M</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Tuesday"> T</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Wednesday"> W</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Thursday"> T</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Friday"> F</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Saturday"> S</label>
+        <label class="day-input-text"><input class="day-input" type="checkbox" name="days" value="Sunday"> S</label>
+      </div>
+      <button class="add-btn">Add Bus</button>
+    </form>
+
+    <hr>
+
+    <div class="provider-buses">
+      <h2>Your Buses</h2>
+      <div class="mybuses"></div>
+    </div>
+  </div>
+
+<script>
+
+async function checkLogin() {
+  const res = await fetch('/api/auth/me');
+  const user = await res.json();
+  console.log(user);
+  if (!user) {
+    alert('Please login first');
+    window.location.href = 'login.html';
+  }
+  let accName = document.querySelector('#acc-name');
+  accName.innerText = user.name;
+
+  let userName = document.querySelector('#user-name');
+  let userDetails = document.querySelector('#user-details');
+
+  userName.innerText = user.name;
+
+  userDetails.innerHTML = `
+    <p><b>User Id: </b>${user._id}</p>
+    <p><b>Email: </b>${user.email}</p>
+    <p><b>Role: </b>${user.role}</p>
+  `
+}
+checkLogin();
+
+let accSec = document.querySelector('.acc-sec');
+let accBtn = document.querySelector('#acc-btn');
+let cancelBtn = document.querySelector('#cancel-btn');
+let mainBody = document.querySelector('.main-body');
+
+accBtn.addEventListener('click', () => {
+  accSec.classList.add('visible');
+  mainBody.classList.add('blur');
+});
+
+cancelBtn.addEventListener('click', () => {
+  accSec.classList.remove('visible');
+  mainBody.classList.remove('blur');
+})
+
+async function loadMyBuses(){
+  const res = await fetch('/api/buses/provider/mybuses');
+  const buses = await res.json();
+  const div = document.querySelector('.mybuses');
+    if (!buses.length) return div.innerHTML = '<h1>No buses found</h1>';
+    let html = '';
+    buses.forEach(b => {
+      console.log(b.weekday);
+      html += 
+      `
+      <div class="bus"> 
+        <h3 class="bus-name">${b.busName}</h3>
+          <div class="details">
+            <p class="bus-from"><b>From: </b>${b.from}</p>
+            <p class="bus-from"><b>To: </b>${b.to}</p>
+            <p><b>Total Seats: </b>${b.totalSeats}</p>
+            <p><b>Price: </b>₹${b.price}</p>
+            <p><b>Time: </b>${b.departureTime}</p>
+            <p><b>Operating days: </b>${b.operatingDays}</p>
+          </div>
+      </div>
+      `;
+    });
+    div.innerHTML = html;
+}
+
+loadMyBuses();
+
+const addBus = document.getElementById('addBus');
+
+addBus.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+  const body = {
+    busName: document.getElementById('busName').value,
+    from: document.getElementById('from').value,
+    to: document.getElementById('to').value,
+    departureTime: document.getElementById('departureTime').value,
+    price: document.getElementById('price').value,
+    totalSeats: document.getElementById('totalSeats').value,
+    operatingDays: selectedDays
+  };
+  const res = await fetch('/api/buses/add', {
+    method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || 'Error adding bus');
+  alert('Bus added');
+  loadMyBuses();
+});
+
+const days = document.querySelectorAll('.day-input-text');
+
+days.forEach(label => {
+  const checkbox = label.querySelector('.day-input');
+  
+  checkbox.addEventListener('change', function() {
+    label.classList.toggle('blue', this.checked);
+    label.classList.toggle('border', this.checked);
+  });
+});
+
+const logOut = document.getElementById('logout');
+logOut.addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/auth/logout');
+    const data = await res.json();
+    if (res.ok) {
+      alert('Logged Out Successfully!');
+      window.location.href = 'login.html';
+    } else {
+      alert(data.error || 'Logout failed!');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Logout Failed!');
+  }
+});
+</script>
+</body>
+</html>

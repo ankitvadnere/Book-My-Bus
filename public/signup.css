@@ -1,0 +1,89 @@
+* {
+    font-family: "Poppins", sans-serif;
+}
+
+.signup {
+    display: flex;
+    margin: auto;
+    flex-wrap: wrap;
+    height: 80vh;
+    width: 35vw;
+    margin-top: 5%;
+    border-radius: 1rem;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.477);
+}
+
+.logo {
+    width: 100%;
+    height: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* border: 2px black solid; */
+}
+
+.signupForm {
+    height: 75%;
+    width: 100%;
+    margin-top: -1.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* border: 2px black solid; */
+}
+
+#signupForm {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#signupForm input {
+    height: 10%;
+    width: 70%;
+    margin: auto;
+    font-size: 1rem;
+    margin-top: -1.3rem;
+    border-radius: 0.8rem;
+    padding: 0rem 0.6rem;
+}
+
+#signupForm select, option {
+    height: 11%;
+    width: 74%;
+    margin: auto;
+    margin-top: -1.3rem;
+    border-radius: 0.8rem;
+    padding: 0rem 0.6rem;
+    font-size: 1rem;
+    border: 2px solid black;
+}
+
+#signupForm label {
+    height: 10%;
+    width: 72%;
+    margin: auto;
+    font-size: 1rem;
+}
+
+#signupForm button {
+    height: 13%;
+    width: 72%;
+    margin: auto;
+    border-radius: 0.8rem;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    background-color: #da0f0f;
+    border: 3px solid black;
+    border-bottom: 4px solid black;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#signupForm button:hover {
+    transform: scale(1.02);
+    font-size: 1.08rem;
+}

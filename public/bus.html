@@ -1,0 +1,459 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Book My Bus</title>
+  <link rel="icon" href="../public/images/Logo.png">
+  <link rel="stylesheet" href="bus.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+  <div class="acc-sec">
+    <div class="head">
+      <i class="fa-solid fa-circle-user"></i>
+      <h1 id="user-name"></h1>
+      <i class="fa-solid fa-xmark" id="cancel-btn"></i>
+    </div>
+    <div class="body" id="user-details"></div>
+    <div class="logout-sec">
+      <button id="logout">Log-out</button>
+    </div>
+  </div>
+
+  <div class="main-body">
+    <div class="nav-bar">
+      <div class="logo">
+          <img src="./images/New_Logo.png">
+      </div>
+      <div class="btn-panel">
+          <div class="btns">
+              <i class="fa-solid fa-arrow-left"></i>
+              <a onclick="history.back()" >Back to Home</a>
+          </div>
+          <div class="btns" id="acc-btn">
+              <i class="fa-solid fa-circle-user"></i>
+              <p id="acc-name"></p>
+          </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="bus-card"></div>
+
+    <hr>
+
+    <div class="seats"></div>
+    <button id="bookBtn">Book Selected Seats</button>
+
+    <hr>
+
+    <h2 class="review-title">Post Your Review</h2>
+    <form id="reviewForm" class="normal" enctype="multipart/form-data">
+      <div class="reviewer">
+        <p id="acc-name-rev"></p>
+      </div>
+      <div class="stars">
+        <input type="radio" name="rating" id="star5" value="5"><label for="star5"><i class="fa-solid fa-star"></i></label>
+        <input type="radio" name="rating" id="star4" value="4"><label for="star4"><i class="fa-solid fa-star"></i></label>
+        <input type="radio" name="rating" id="star3" value="3"><label for="star3"><i class="fa-solid fa-star"></i></label>
+        <input type="radio" name="rating" id="star2" value="2"><label for="star2"><i class="fa-solid fa-star"></i></label>
+        <input type="radio" name="rating" id="star1" value="1"><label for="star1"><i class="fa-solid fa-star"></i></label>
+      </div>
+      <br><textarea name="text" class="review"></textarea><br>
+      <label for="images" class="upload-btn"><i class="fa-solid fa-images"></i>Add Images</label>
+      <input id="images" type="file" multiple accept="image/*">
+      <div id="preview"></div>
+      <button type="submit" id="submit-btn">Submit Review</button>
+    </form>
+
+    <hr>
+
+    <div class="reviews-sec">
+      <h2>Reviews</h2>
+      <button id="prev-reviews" class="review-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+      <div id="reviews"></div>
+      <button id="next-reviews" class="review-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+  </div>
+<script>
+  async function checkLogin() {
+    const res = await fetch('/api/auth/me');
+    const user = await res.json();
+    console.log(user);
+    if (!user) {
+      alert('Please login first');
+      window.location.href = 'login.html';
+    }
+    let accName = document.querySelector('#acc-name');
+    accName.innerText = user.name;
+
+    let userName = document.querySelector('#user-name');
+    let userDetails = document.querySelector('#user-details');
+
+    userName.innerText = user.name;
+
+    userDetails.innerHTML = `
+      <p><b>User Id: </b>${user._id}</p>
+      <p><b>Email: </b>${user.email}</p>
+      <p><b>Role: </b>${user.role}</p>
+    `
+
+    let revAccName = document.querySelector('#acc-name-rev');
+
+    revAccName.innerText = user.name;
+  }
+  checkLogin();
+
+  let accSec = document.querySelector('.acc-sec');
+  let accBtn = document.querySelector('#acc-btn');
+  let cancelBtn = document.querySelector('#cancel-btn');
+  let mainBody = document.querySelector('.main-body');
+
+  accBtn.addEventListener('click', () => {
+    accSec.classList.add('visible');
+    mainBody.classList.add('blur');
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    accSec.classList.remove('visible');
+    mainBody.classList.remove('blur');
+  })
+
+  function qs(name){ const url = new URL(location.href); return url.searchParams.get(name); }
+  const busId = qs('id');
+  const dateOfTravel = qs('date');
+  let busData = null;
+  let selectedSeats = new Set();
+
+  async function loadBus(){
+    const res = await fetch('/api/buses/' + busId);
+    busData = await res.json();
+    console.log(busData);
+    let busCard = document.querySelector('.bus-card');
+    busCard.innerHTML = `
+      <h2 id="title">${busData.busName}</h2>
+      <div class="bus-details">
+        <p><b>From: </b>${busData.from}</p>
+        <p><b>To: </b>${busData.to}</p>
+        <p><b>Time: </b>${busData.departureTime}</p>
+        <p><b>Date: </b>${dateOfTravel}</p>
+        <p><b>Price: </b>₹${busData.price}</p>
+      </div>
+    `
+    renderSeats();
+    loadReviews();
+  }
+
+  async function renderSeats() {
+    const busStruct = document.querySelector('.seats');
+    busStruct.innerHTML = '';
+
+    // 🔹 fetch booked seats for this bus and date
+    const res = await fetch(`/api/bookings/bookedSeats?busId=${busId}&date=${dateOfTravel}`);
+    const bookedSeats = await res.json();
+    console.log('Booked seats for', dateOfTravel, ':', bookedSeats);
+
+    let halfSeats = Math.floor(busData.seats.length / 2);
+
+    busData.seats.forEach(s => {
+      if (s.number === halfSeats + 1) {
+        busStruct.appendChild(document.createElement('br'));
+        busStruct.appendChild(document.createElement('br'));
+      }
+
+      const btn = document.createElement('button');
+      btn.setAttribute('class', 'seat');
+      btn.innerText = s.number;
+
+      // 🔹 Disable button if seat is already booked for that date
+      if (bookedSeats.includes(s.number)) {
+        btn.disabled = true;
+        btn.classList.add('booked');
+      }
+
+      btn.addEventListener('click', () => {
+        if (selectedSeats.has(btn.innerText)) {
+          selectedSeats.delete(btn.innerText);
+          btn.classList.remove('choose');
+        } else {
+          selectedSeats.add(btn.innerText);
+          btn.classList.add('choose');
+        }
+      });
+
+      busStruct.appendChild(btn);
+    });
+  }
+
+  document.getElementById('bookBtn').addEventListener('click', async ()=>{
+    if (!selectedSeats.size) return alert('Select seats first');
+    const seats = Array.from(selectedSeats);
+    const res = await fetch('/api/bookings/book', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ busId, seats, dateOfTravel})
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || 'Booking failed');
+    alert('Booked!'); selectedSeats.clear(); loadBus();
+  });
+
+  let selectedFiles = [];
+
+  // Handle file selection + preview
+  document.getElementById('images').addEventListener('change', function (e) {
+    const newFiles = Array.from(e.target.files);
+    if (selectedFiles.length + newFiles.length > 5) {
+      alert('⚠️ You can only upload up to 5 images per review.');
+      e.target.value = ''; // reset file input
+      return;
+    }
+
+    selectedFiles = selectedFiles.concat(newFiles);
+    displayPreviews();
+  });
+
+  // Display selected images with remove option
+  function displayPreviews() {
+    const reviewForm = document.querySelector('#reviewForm');
+    reviewForm.classList.remove('normal');
+    reviewForm.classList.add('enlarge');
+    const preview = document.getElementById('preview');
+    preview.innerHTML = ''; // clear previous previews
+
+    selectedFiles.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const div = document.createElement('div');
+        div.classList.add('img-box');
+        div.innerHTML = `
+          <img src="${event.target.result}" alt="${file.name}">
+          <button class="remove-btn" onclick="removeImage(${index})"><i class="fa-solid fa-circle-xmark"></i></button>
+        `;
+        preview.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // optional file list text (if you still want it)
+    const names = selectedFiles.map(f => f.name).join(', ');
+    document.getElementById('fileList').innerText = names || 'No files selected';
+  }
+
+  // Remove an image
+  function removeImage(index) {
+    selectedFiles.splice(index, 1);
+    displayPreviews();
+  }
+
+  // Handle review form submit
+  document.getElementById('reviewForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target;
+
+    if(selectedFiles.length > 5) {
+      alert('Cannot enter more than 5 images!');
+    }
+
+    const fd = new FormData(form);
+    selectedFiles.forEach(f => fd.append('images', f)); // attach all selected images
+
+    const res = await fetch('/api/reviews/' + busId, { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!res.ok) return alert(data.error || 'Review failed');
+    alert('✅ Review posted successfully!');
+    
+    // Reset form & previews
+    form.reset();
+    reviewForm.classList.remove('enlarge');
+    reviewForm.classList.add('normal');
+    selectedFiles = [];
+    document.getElementById('preview').innerHTML = '';
+    document.getElementById('fileList').innerText = '';
+    loadReviews(); // reload existing reviews
+  });
+
+  let currentReviewIndex = 0;
+  const reviewsPerPage = 3;
+  let allReviews = [];
+  let currentUserId = null; // store globally
+
+  async function loadReviews() {
+    const res = await fetch('/api/reviews/bus/' + busId);
+    allReviews = await res.json();
+    const div = document.getElementById('reviews');
+
+    if (!allReviews.length) {
+      div.innerHTML = '<p>No reviews yet</p>';
+      document.getElementById('prev-reviews').style.display = 'none';
+      document.getElementById('next-reviews').style.display = 'none';
+      return;
+    }
+
+    if (allReviews.length == 3) {
+      document.getElementById('prev-reviews').style.display = 'none';
+      document.getElementById('next-reviews').style.display = 'none';
+      renderReviews();
+      return;
+    }
+
+    // get current logged-in user (to know which reviews they can delete)
+    try {
+      const meRes = await fetch('/api/auth/me');
+      const me = await meRes.json();
+      currentUserId = me?._id;
+    } catch {
+      currentUserId = null;
+    }
+
+    renderReviews();
+    updateNavButtons();
+  }
+
+  function renderReviews() {
+    const div = document.getElementById('reviews');
+    const visibleReviews = allReviews.slice(currentReviewIndex, currentReviewIndex + reviewsPerPage);
+
+    div.innerHTML = visibleReviews.map(r => {
+      const filledStars = '<i class="fa-solid fa-star filled"></i>'.repeat(r.rating || 0);
+      const emptyStars = '<i class="fa-solid fa-star empty"></i>'.repeat(5 - (r.rating || 0));
+      const stars = `<span class="stars">${emptyStars}${filledStars}</span>`;
+
+      return `
+        <div class="review-card">
+          <div class="reviewer-logo"><i class="fa-solid fa-user"></i></div>
+          <strong class="reviewer-name">${r.userId?.name || 'User'}</strong>
+          <span class="review-date">${new Date(r.createdAt).toLocaleString()}</span><br>
+          ${stars}<br>
+          <p class="reviewer-review">${r.text || ''}</p>
+          <button class="see-review-imgs"><i class="fa-solid fa-images"></i> See Images</button>
+          
+          ${r.userId?._id === currentUserId
+            ? `
+              <button class="delete-review-btn" data-id="${r._id}">
+                <i class="fa-solid fa-trash"></i> Delete Review
+              </button>`
+            : ''}
+
+          <div class="review-img-viewer hide-img">
+            <button class="prev-img"><i class="fa-solid fa-chevron-left"></i></button>
+            <img src="${(r.images && r.images[0]) || ''}" class="current-img" alt="Review Image">
+            <button class="next-img"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+
+          <div class="all-imgs" style="display: none;">
+            ${(r.images || []).map(i => `<img src="${i}" class="review-img">`).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateNavButtons() {
+    const prevBtn = document.getElementById('prev-reviews');
+    const nextBtn = document.getElementById('next-reviews');
+
+    prevBtn.disabled = currentReviewIndex <= 0;
+    nextBtn.disabled = currentReviewIndex + reviewsPerPage >= allReviews.length;
+  }
+
+  document.getElementById('next-reviews').addEventListener('click', () => {
+    if (currentReviewIndex + reviewsPerPage < allReviews.length) {
+      currentReviewIndex += reviewsPerPage;
+      renderReviews(); // now uses global currentUserId
+      updateNavButtons();
+    }
+  });
+
+  document.getElementById('prev-reviews').addEventListener('click', () => {
+    if (currentReviewIndex > 0) {
+      currentReviewIndex -= reviewsPerPage;
+      renderReviews(); // same here
+      updateNavButtons();
+    }
+  });
+
+  document.addEventListener('click', e => {
+    // Show image viewer
+    if (e.target.classList.contains('see-review-imgs')) {
+      const reviewCard = e.target.closest('.review-card');
+      const viewer = reviewCard.querySelector('.review-img-viewer');
+      const imgs = [...reviewCard.querySelectorAll('.review-img')];
+      
+      if (!imgs.length) return alert('No images available');
+
+      let currentIndex = 0;
+      const imgTag = viewer.querySelector('.current-img');
+      imgTag.src = imgs[currentIndex].src;
+      viewer.classList.toggle('hide-img');
+      reviewCard.classList.toggle('expand-review');
+
+      // Save index in dataset (so next/prev know which image we’re on)
+      viewer.dataset.index = currentIndex;
+    }
+
+    // Next image
+    if (e.target.classList.contains('next-img')) {
+      const viewer = e.target.closest('.review-img-viewer');
+      const reviewCard = e.target.closest('.review-card');
+      const imgs = [...reviewCard.querySelectorAll('.review-img')];
+      let index = parseInt(viewer.dataset.index) || 0;
+
+      index = (index + 1) % imgs.length; // wrap around
+      viewer.querySelector('.current-img').src = imgs[index].src;
+      viewer.dataset.index = index;
+    }
+
+    // Previous image
+    if (e.target.classList.contains('prev-img')) {
+      const viewer = e.target.closest('.review-img-viewer');
+      const reviewCard = e.target.closest('.review-card');
+      const imgs = [...reviewCard.querySelectorAll('.review-img')];
+      let index = parseInt(viewer.dataset.index) || 0;
+
+      index = (index - 1 + imgs.length) % imgs.length; // wrap around
+      viewer.querySelector('.current-img').src = imgs[index].src;
+      viewer.dataset.index = index;
+    }
+  });
+
+  document.addEventListener('click', async e => {
+    if (e.target.classList.contains('delete-review-btn')) {
+      const id = e.target.dataset.id;
+      if (confirm('Are you sure you want to delete this review?')) {
+        const res = await fetch('/api/reviews/' + id, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) return alert(data.error || 'Delete failed');
+        alert('Review deleted');
+        loadReviews(); // reload reviews
+      }
+    }
+  });
+
+  let logOut = document.getElementById('logout');
+  logOut.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/auth/logout');
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Logout failed!');
+      } else {
+        alert('Logged Out Successfully!');
+        window.location.href = 'login.html';
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Logout Failed!');
+    }
+  });
+
+  loadBus();
+</script>
+</body>
+</html>
